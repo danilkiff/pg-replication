@@ -1,11 +1,12 @@
 name: ci
 on:
   push:
-  pull_request:
+    branches: [master]
 
 jobs:
   scenarios:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - run: make test
