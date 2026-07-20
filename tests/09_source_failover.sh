@@ -7,16 +7,16 @@
 # synchronized_standby_slots for exactly this).
 
 cd "$(dirname "$0")/.." && source tests/lib.sh
-setup t10_failover
-trap 'restore_pair $PUB $PUB_STANDBY sub_t10' EXIT
+setup t09_failover
+trap 'restore_pair $PUB $PUB_STANDBY sub_t09' EXIT
 
 wait_streaming $PUB
 
 sql $PUB $DB "CREATE TABLE t (id int PRIMARY KEY, v text)"
 sql $SUB $DB "CREATE TABLE t (id int PRIMARY KEY, v text)"
 sql $PUB $DB "CREATE PUBLICATION pub_ha FOR TABLE t"
-sql $SUB $DB "CREATE SUBSCRIPTION sub_t10 CONNECTION '$(pub_conninfo $DB)' PUBLICATION pub_ha"
-wait_sync $SUB $DB sub_t10
+sql $SUB $DB "CREATE SUBSCRIPTION sub_t09 CONNECTION '$(pub_conninfo $DB)' PUBLICATION pub_ha"
+wait_sync $SUB $DB sub_t09
 
 sql $PUB $DB "INSERT INTO t SELECT g, 'row-' || g FROM generate_series(1, 100) g"
 wait_value $SUB $DB "SELECT count(*) FROM t" 100 "baseline replicated everywhere"
@@ -40,5 +40,5 @@ risk assert_eq "$(sql $SUB $DB "SELECT count(*) FROM t")" 200 \
 risk assert_eq "$(sql $PUB_STANDBY $DB "SELECT count(*) FROM pg_replication_slots")" 0 \
   "logical slot did not survive the failover"
 
-sql $SUB $DB "ALTER SUBSCRIPTION sub_t10 DISABLE"
+sql $SUB $DB "ALTER SUBSCRIPTION sub_t09 DISABLE"
 finish

@@ -28,12 +28,12 @@ poking.
   identity, fixed by `REPLICA IDENTITY FULL`;
 - `07_schema_drift` — DDL is not replicated: a new publisher column breaks
   apply until added on the subscriber; sequences are not replicated either;
-- `09_source_switchover` — planned switchover of the source to its physical
+- `08_source_switchover` — planned switchover of the source to its physical
   standby without losing a row: freeze writes, promote, recreate the slot,
   repoint the subscription;
-- `10_source_failover` — unplanned source failover with a lagging standby:
+- `09_source_failover` — unplanned source failover with a lagging standby:
   the slot is gone and the subscriber ends up ahead of the new source;
-- `11_subscriber_failover` — the subscription survives the subscriber's own
+- `10_subscriber_failover` — the subscription survives the subscriber's own
   failover, but transactions the dead primary confirmed are silently skipped.
 
 Bidirectional replication is deliberately absent: safe same-table loop

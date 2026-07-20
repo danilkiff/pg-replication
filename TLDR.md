@@ -59,13 +59,13 @@ transparently on PG15:
 - logical replication slots are not carried over by physical failover: the
   promoted source has no slot, and with a lagging standby the subscriber ends
   up ahead of the new source — divergence with no error anywhere
-  (`tests/10_source_failover.sh`). Slot synchronization to a standby
+  (`tests/09_source_failover.sh`). Slot synchronization to a standby
   (`failover` slots, `sync_replication_slots`) arrived in
   [PG17](https://www.postgresql.org/docs/17/logical-replication-failover.html);
 - a planned switchover is lossless on PG15: freeze writes, wait out both
   consumers, promote, recreate the slot, repoint the subscription
-  (`tests/09_source_switchover.sh`);
+  (`tests/08_source_switchover.sh`);
 - on the subscriber side the subscription and its origin progress do travel
   with the physical replica, but the publisher resumes at the slot's
   `confirmed_flush_lsn` — transactions the dead primary had confirmed are
-  skipped silently (`tests/11_subscriber_failover.sh`).
+  skipped silently (`tests/10_subscriber_failover.sh`).
