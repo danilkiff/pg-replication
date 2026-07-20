@@ -15,7 +15,9 @@ pub_conninfo() { conninfo publisher "$1"; }
 
 _PASS=0
 
-# sql <node> <db> <statement> — run SQL, print tuples only
+# sql <node> <db> <statement> — run SQL inside the container: -X skips psqlrc,
+# -q silences banners, -At prints bare unaligned tuples; exec -T allocates no
+# TTY so the output can be captured
 sql() {
   local node=$1
   local db=$2
@@ -67,6 +69,8 @@ expect_fail() {
   local pattern=$4
   local desc=$5
   local out
+  # assignment inside if: capture the output and branch on the exit code
+  # without tripping set -e
   if out=$(sql "$node" "$db" "$statement" 2>&1); then
     fail "$desc: statement succeeded but an error was expected"
   fi
@@ -82,10 +86,13 @@ wait_value() {
   local expected=$4
   local desc=$5
   local timeout=${6:-30}
+  # SECONDS is bash's builtin count of seconds since shell start
   local deadline=$((SECONDS + timeout))
   local actual
   local err=''
   while true; do
+    # assignment inside if: capture the output and branch on the exit code
+    # without tripping set -e
     if actual=$(sql "$node" "$db" "$query" 2>&1); then
       err=''
     else

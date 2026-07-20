@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# No -e on purpose: a failing scenario must not stop the run — every scenario
+# executes and the failures are listed at the end
 set -uo pipefail
 cd "$(dirname "$0")"
 
