@@ -13,7 +13,7 @@ for t in [0-9][0-9]_*.sh; do
 done
 
 echo
-if (( ${#failed[@]} )); then
+if (( ${#failed[@]} > 0 )); then
   echo "${RED}FAILED: ${failed[*]}${RESET}"
   exit 1
 fi
