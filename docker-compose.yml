@@ -10,33 +10,12 @@ x-node: &node
     timeout: 2s
     retries: 30
 
-# Sender-side limits are raised because scenario databases stay around for
-# inspection after the suite, each holding a live replication slot. The standby
-# runs the same flags so a promoted node can host publications immediately.
-# hot_standby_feedback acts only on the standby: without it the primary's
-# vacuum can invalidate the standby's logical slot (12_standby_decoding).
-x-source-command: &source-command >-
-  -c wal_level=logical
-  -c max_wal_senders=20
-  -c max_replication_slots=20
-  -c hot_standby_feedback=on
-
-# Apply workers count against both limits; defaults (8/4) stall initial sync
-# once a few scenario subscriptions are running concurrently. On the receiving
-# side max_replication_slots sizes the replication-origin state pool — one
-# origin per subscription, so the default (10) runs out too. wal_level=logical
-# because the bidirectional scenario (11_origin_filter) makes the subscriber a
-# publisher as well.
-x-sink-command: &sink-command >-
-  -c wal_level=logical
-  -c max_worker_processes=32
-  -c max_logical_replication_workers=16
-  -c max_replication_slots=20
-
+# No command-line -c flags anywhere: the cluster GUCs live in the datadir via
+# ALTER SYSTEM (init-primary.sh) so that standbys inherit them with the
+# basebackup and tools that restart a node from its datadir see them too.
 services:
   publisher:
     <<: *node
-    command: *source-command
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
@@ -46,7 +25,7 @@ services:
     <<: *node
     user: postgres
     entrypoint: ["bash", "/docker/standby-entrypoint.sh", "publisher"]
-    command: *source-command
+    command: [postgres]
     ports:
       - "127.0.0.1:5435:5432"
     volumes:
@@ -57,7 +36,6 @@ services:
 
   subscriber:
     <<: *node
-    command: *sink-command
     ports:
       - "127.0.0.1:5434:5432"
     volumes:
@@ -67,7 +45,7 @@ services:
     <<: *node
     user: postgres
     entrypoint: ["bash", "/docker/standby-entrypoint.sh", "subscriber"]
-    command: *sink-command
+    command: [postgres]
     ports:
       - "127.0.0.1:5436:5432"
     volumes:
