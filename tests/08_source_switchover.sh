@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Planned source switchover: with writes frozen and both the physical standby
 # and the logical consumer fully caught up, the publisher role moves to the
-# standby without losing a row. The PG15 procedure: disable the subscription,
+# standby without losing a row. The pre-PG17 procedure: disable the subscription,
 # promote, recreate the logical slot on the new primary (slots do not survive
 # failover), repoint the subscription. No resync needed because nothing was
 # written in between.

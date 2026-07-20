@@ -154,11 +154,14 @@ drop_db() {
   done
 }
 
-# setup <db_name> — fresh database pair on both nodes; sets $DB for the test
+# setup <db_name> — fresh database pair on both nodes; sets $DB for the test.
+# Subscriptions are dropped on both nodes: the bidirectional scenario leaves
+# one on the publisher too, and DROP DATABASE refuses while it exists.
 setup() {
   DB=$1
   echo "=== $(basename "$0"): $DB"
   drop_subs $SUB "$DB"
+  drop_subs $PUB "$DB"
   drop_db $PUB "$DB"
   drop_db $SUB "$DB"
   sql $PUB postgres "CREATE DATABASE $DB"

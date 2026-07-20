@@ -1,7 +1,8 @@
-# PostgreSQL 15 logical replication scenarios
+# PostgreSQL 16 logical replication scenarios
 
-Four `postgres:15.18` containers under Docker Compose — `publisher` and
-`subscriber`, each with a physical standby for the failover scenarios — and a
+Four `postgres:16.14` containers under Docker Compose — `publisher` and
+`subscriber`, each with a physical standby for the failover and
+standby-decoding scenarios — and a
 set of self-contained test scripts demonstrating logical replication: the
 happy path and the edge cases people actually hit. Each scenario is executable,
 runs in its own database pair, and asserts what it claims.
@@ -34,19 +35,23 @@ poking.
 - `09_source_failover` — unplanned source failover with a lagging standby:
   the slot is gone and the subscriber ends up ahead of the new source;
 - `10_subscriber_failover` — the subscription survives the subscriber's own
-  failover, but transactions the dead primary confirmed are silently skipped.
+  failover, but transactions the dead primary confirmed are silently skipped;
+- `11_origin_filter` — same-table bidirectional replication with
+  [`origin = none`](https://www.postgresql.org/docs/16/sql-createsubscription.html)
+  (PG16): both sides publish and subscribe, locally-originated changes only,
+  no loop;
+- `12_standby_decoding` — logical decoding on a standby (PG16): the
+  subscription feeds off the publisher's physical standby;
+  `pg_log_standby_snapshot()` unblocks slot creation.
 
 ## Out of scope
 
 - physical streaming replication as a topic of its own: the standbys exist to
-  serve the failover scenarios;
+  serve the failover and standby-decoding scenarios;
 - `streaming` / `two_phase` subscription options;
-- bidirectional replication: safe same-table loop protection needs the
-  [`origin` subscription option](https://www.postgresql.org/docs/16/sql-createsubscription.html),
-  which arrived in PostgreSQL 16;
 - orchestration beyond Docker Compose.
 
 TLDR.md sums up the contract obligations the scenarios demonstrate and the
-PG15 limitations around physical HA. Scenario scripts in `tests/` are the
+version limitations around physical HA. Scenario scripts in `tests/` are the
 documentation: each starts with a comment explaining the behavior it
 demonstrates, then shows it in runnable SQL.

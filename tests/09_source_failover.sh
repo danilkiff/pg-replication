@@ -2,8 +2,8 @@
 # Unplanned source failover with a lagging standby (here: stopped outright).
 # The logical consumer keeps confirming transactions the standby never
 # received, so after promotion the subscriber is AHEAD of the new source and
-# the logical slot is gone — the subscription cannot resume. On PG15 nothing
-# ties the logical consumer to the physical pair (PG17 adds
+# the logical slot is gone — the subscription cannot resume. Before PG17
+# nothing ties the logical consumer to the physical pair (PG17 adds
 # synchronized_standby_slots for exactly this).
 
 cd "$(dirname "$0")/.." && source tests/lib.sh
