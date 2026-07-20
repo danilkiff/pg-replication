@@ -44,4 +44,9 @@ wait_value $SUB $DB "SELECT v FROM t WHERE id = 2" "after-conflict" "replication
 risk assert_eq "$(sql $SUB $DB "SELECT v FROM t WHERE id = 1")" "local" \
   "conflicting transaction skipped, local row intact"
 
+# disable_on_error served the demonstration; left on, it would also trip on
+# connection loss when the ha scenarios take the publisher down, leaving a
+# disabled subscription whose slot pins WAL on the publisher
+sql $SUB $DB "ALTER SUBSCRIPTION sub_t04 SET (disable_on_error = false)"
+
 finish
