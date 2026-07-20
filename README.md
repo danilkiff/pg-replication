@@ -1,13 +1,16 @@
 # PostgreSQL 15 logical replication scenarios
 
-Two `postgres:15` instances under Docker Compose, a set of self-contained test
-scripts demonstrating logical replication: the happy path and the edge cases
-people actually hit. Each scenario is executable and asserts what it claims.
+Four `postgres:15` containers under Docker Compose — `publisher` and
+`subscriber`, each with a physical standby for the failover scenarios — and a
+set of self-contained test scripts demonstrating logical replication: the
+happy path and the edge cases people actually hit. Each scenario is executable
+and asserts what it claims.
 
 Requires Docker only; all SQL runs inside the containers. `make` prints the
 available targets; `make test` runs everything, `make test-04` runs one
-scenario. Instances are exposed on host ports 5433 (publisher) and 5434
-(subscriber), password `postgres`, for manual poking.
+scenario. Instances are exposed on host ports 5433 (publisher), 5434
+(subscriber), 5435/5436 (their standbys), password `postgres`, for manual
+poking.
 
 ## Scenarios
 
@@ -24,7 +27,14 @@ scenario. Instances are exposed on host ports 5433 (publisher) and 5434
 - `06_replica_identity` — UPDATE/DELETE rejected on a table without a replica
   identity, fixed by `REPLICA IDENTITY FULL`;
 - `07_schema_drift` — DDL is not replicated: a new publisher column breaks
-  apply until added on the subscriber; sequences are not replicated either.
+  apply until added on the subscriber; sequences are not replicated either;
+- `09_source_switchover` — planned switchover of the source to its physical
+  standby without losing a row: freeze writes, promote, recreate the slot,
+  repoint the subscription;
+- `10_source_failover` — unplanned source failover with a lagging standby:
+  the slot is gone and the subscriber ends up ahead of the new source;
+- `11_subscriber_failover` — the subscription survives the subscriber's own
+  failover, but transactions the dead primary confirmed are silently skipped.
 
 Bidirectional replication is deliberately absent: safe same-table loop
 protection needs the

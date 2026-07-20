@@ -1,6 +1,7 @@
 # TLDR
 
-Seven scenarios against two `postgres:15` (15.18) nodes, all passing. The
+Ten scenarios against a four-node `postgres:15` (15.18) stand — publisher and
+subscriber, each an active-passive physical pair — all passing. The
 experiment's core result: logical replication is not a transparent add-on —
 publishing tables imposes contract obligations on the data source itself, and
 each one is observable as a concrete failure when violated. A side finding:
@@ -55,8 +56,16 @@ transparently on PG15:
 - a PG15 standby cannot run logical decoding, so the passive node cannot serve
   logical consumers until promoted; lifted in
   [PG16](https://www.postgresql.org/docs/release/16.0/);
-- logical replication slots are not carried over by physical failover: after
-  promotion every subscriber has to recreate its slot and resynchronize. Slot
-  synchronization to a standby (`failover` slots, `sync_replication_slots`)
-  arrived in
-  [PG17](https://www.postgresql.org/docs/17/logical-replication-failover.html).
+- logical replication slots are not carried over by physical failover: the
+  promoted source has no slot, and with a lagging standby the subscriber ends
+  up ahead of the new source — divergence with no error anywhere
+  (`tests/10_source_failover.sh`). Slot synchronization to a standby
+  (`failover` slots, `sync_replication_slots`) arrived in
+  [PG17](https://www.postgresql.org/docs/17/logical-replication-failover.html);
+- a planned switchover is lossless on PG15: freeze writes, wait out both
+  consumers, promote, recreate the slot, repoint the subscription
+  (`tests/09_source_switchover.sh`);
+- on the subscriber side the subscription and its origin progress do travel
+  with the physical replica, but the publisher resumes at the slot's
+  `confirmed_flush_lsn` — transactions the dead primary had confirmed are
+  skipped silently (`tests/11_subscriber_failover.sh`).

@@ -5,8 +5,9 @@ instances: the happy path and its edge cases.
 
 ## Environment
 
-- two `postgres:15` instances (latest 15.x minor) under Docker Compose: `publisher`
-  (`wal_level = logical`) and `subscriber`;
+- four `postgres:15` containers (latest 15.x minor) under Docker Compose:
+  `publisher` (`wal_level = logical`) and `subscriber`, each with a physical
+  standby seeded via `pg_basebackup` for the failover scenarios;
 - no host dependencies beyond Docker: all SQL runs via `docker compose exec psql`.
 
 ## Scenarios
@@ -35,6 +36,16 @@ Failure and conflict cases:
   `REPLICA IDENTITY FULL` fix;
 - schema drift: DDL is not replicated — a new publisher column breaks apply until
   added on the subscriber; sequences are not replicated either.
+
+HA failover (each node acting as an active-passive pair):
+
+- planned source switchover: frozen writes, promote, recreate the slot, repoint
+  the subscription — no rows lost;
+- unplanned source failover with a lagging standby: the slot is gone and the
+  subscriber ends up ahead of the new source;
+- subscriber failover: the subscription and origin progress move with the
+  physical replica, but transactions the dead primary confirmed are silently
+  skipped.
 
 ## Verification
 
