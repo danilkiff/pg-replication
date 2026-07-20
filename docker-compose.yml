@@ -1,35 +1,71 @@
+x-node: &node
+  image: postgres:15
+  environment:
+    POSTGRES_PASSWORD: postgres
+    # picked up by pg_basebackup and by the standby's walreceiver
+    PGPASSWORD: postgres
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U postgres"]
+    interval: 2s
+    timeout: 2s
+    retries: 30
+
+# Sender-side limits are raised because scenario databases stay around for
+# inspection after the suite, each holding a live replication slot. The standby
+# runs the same flags so a promoted node can host publications immediately.
+x-source-command: &source-command >-
+  -c wal_level=logical
+  -c max_wal_senders=20
+  -c max_replication_slots=20
+
+# Apply workers count against both limits; defaults (8/4) stall initial sync
+# once a few scenario subscriptions are running concurrently. On the receiving
+# side max_replication_slots sizes the replication-origin state pool — one
+# origin per subscription, so the default (10) runs out too.
+x-sink-command: &sink-command >-
+  -c max_worker_processes=32
+  -c max_logical_replication_workers=16
+  -c max_replication_slots=20
+
 services:
   publisher:
-    image: postgres:15
-    environment:
-      POSTGRES_PASSWORD: postgres
-    # Sender-side limits are raised because scenario databases stay around for
-    # inspection after the suite, each holding a live replication slot
-    command: >-
-      -c wal_level=logical
-      -c max_wal_senders=20
-      -c max_replication_slots=20
+    <<: *node
+    command: *source-command
     ports:
       - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 2s
-      timeout: 2s
-      retries: 30
+    volumes:
+      - ./docker/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
+
+  publisher-standby:
+    <<: *node
+    user: postgres
+    entrypoint: ["bash", "/docker/standby-entrypoint.sh", "publisher"]
+    command: *source-command
+    ports:
+      - "5435:5432"
+    volumes:
+      - ./docker:/docker:ro
+    depends_on:
+      publisher:
+        condition: service_healthy
 
   subscriber:
-    image: postgres:15
-    environment:
-      POSTGRES_PASSWORD: postgres
-    # Apply workers count against both limits; defaults (8/4) stall initial sync
-    # once a few scenario subscriptions are running concurrently
-    command: >-
-      -c max_worker_processes=32
-      -c max_logical_replication_workers=16
+    <<: *node
+    command: *sink-command
     ports:
       - "5434:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 2s
-      timeout: 2s
-      retries: 30
+    volumes:
+      - ./docker/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
+
+  subscriber-standby:
+    <<: *node
+    user: postgres
+    entrypoint: ["bash", "/docker/standby-entrypoint.sh", "subscriber"]
+    command: *sink-command
+    ports:
+      - "5436:5432"
+    volumes:
+      - ./docker:/docker:ro
+    depends_on:
+      subscriber:
+        condition: service_healthy
