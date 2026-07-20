@@ -130,7 +130,6 @@ drop_db() {
 setup() {
   DB=$1
   echo "=== $(basename "$0"): $DB"
-  drop_subs $PUB "$DB"
   drop_subs $SUB "$DB"
   drop_db $PUB "$DB"
   drop_db $SUB "$DB"
