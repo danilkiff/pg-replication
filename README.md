@@ -27,8 +27,10 @@ scenario. Instances are exposed on host ports 5433 (publisher) and 5434
   apply until added on the subscriber; sequences are not replicated either.
 
 Bidirectional replication is deliberately absent: safe same-table loop
-protection needs the `origin` subscription option, which arrived in
-PostgreSQL 16.
+protection needs the
+[`origin` subscription option](https://www.postgresql.org/docs/16/sql-createsubscription.html),
+which arrived in PostgreSQL 16. TLDR.md sums up the contract obligations the
+scenarios demonstrate and the PG15 limitations around physical HA.
 
 Scenario scripts in `tests/` are the documentation: each starts with a comment
 explaining the behavior it demonstrates, then shows it in runnable SQL.
