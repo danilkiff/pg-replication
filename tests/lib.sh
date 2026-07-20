@@ -22,30 +22,21 @@ sql() {
 }
 
 # Gentoo-style markers: green * ok, red * failure, orange ! for an assertion
-# whose success confirms an operational risk. Colored only when stdout is a
-# color-capable terminal; orange needs 256 colors, otherwise falls back to
-# yellow.
-_G='' _R='' _O='' _N=''
-if [[ -z "${NO_COLOR:-}" && -t 1 ]]; then
-  _colors=$(tput colors 2>/dev/null || echo 0)
-  if (( _colors >= 8 )); then
-    _G=$'\e[32;01m' _R=$'\e[31;01m' _O=$'\e[33;01m' _N=$'\e[0m'
-    (( _colors >= 256 )) && _O=$'\e[38;5;208;01m'
-  fi
-fi
+# whose success confirms an operational risk
+source tests/colors.sh
 
 _RISK=0
 ok() {
   _PASS=$((_PASS + 1))
   if (( _RISK )); then
-    echo " ${_O}!${_N} $1"
+    echo " ${ORANGE}!${RESET} $1"
   else
-    echo " ${_G}*${_N} $1"
+    echo " ${GREEN}*${RESET} $1"
   fi
 }
 
 fail() {
-  echo " ${_R}*${_N} FAIL: $1" >&2
+  echo " ${RED}*${RESET} FAIL: $1" >&2
   exit 1
 }
 
@@ -173,5 +164,5 @@ restore_pair() {
 }
 
 finish() {
-  echo "=== ${_G}PASSED${_N} ($_PASS assertions)"
+  echo "=== ${GREEN}PASSED${RESET} ($_PASS assertions)"
 }
