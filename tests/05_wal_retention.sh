@@ -18,9 +18,6 @@ sql $PUB $DB "CREATE PUBLICATION pub_wal FOR TABLE t"
 sql $SUB $DB "CREATE SUBSCRIPTION sub_t05 CONNECTION '$(pub_conninfo $DB)' PUBLICATION pub_wal"
 wait_sync $SUB $DB sub_t05
 
-backlog="SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn)
-           FROM pg_replication_slots WHERE slot_name = 'sub_t05'"
-
 $COMPOSE stop $SUB >/dev/null
 wait_value $PUB $DB "SELECT active FROM pg_replication_slots WHERE slot_name = 'sub_t05'" f \
   "slot inactive while subscriber is down"
@@ -28,13 +25,16 @@ wait_value $PUB $DB "SELECT active FROM pg_replication_slots WHERE slot_name = '
 # ~30 MB of WAL the slot now has to retain
 sql $PUB $DB "INSERT INTO t SELECT g, repeat('x', 1000) FROM generate_series(1, 30000) g"
 
-retained=$(sql $PUB $DB "$backlog")
+retained=$(sql $PUB $DB "SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn)
+                           FROM pg_replication_slots WHERE slot_name = 'sub_t05'")
 (( retained > 10 * 1024 * 1024 )) || fail "expected >10MB retained WAL, got $retained bytes"
 risk ok "slot retains WAL while subscriber is down: $retained bytes"
 
 $COMPOSE start $SUB >/dev/null
 wait_value $SUB $DB "SELECT 1" 1 "subscriber is back" 60
 wait_value $SUB $DB "SELECT count(*) FROM t" 30000 "subscriber caught up" 120
-wait_value $PUB $DB "SELECT ($backlog) < 1024 * 1024" t "retained WAL released after catch-up" 60
+wait_value $PUB $DB "SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn) < 1024 * 1024
+                       FROM pg_replication_slots WHERE slot_name = 'sub_t05'" t \
+  "retained WAL released after catch-up" 60
 
 finish
