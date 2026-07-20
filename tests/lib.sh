@@ -155,14 +155,21 @@ promote() {
   wait_value "$1" postgres "SELECT pg_is_in_recovery()" f "$1 promoted" 60
 }
 
-# restore_pair <primary> <standby> — rebuild the pair after a failover
+# restore_pair <primary> <standby> [slot] — rebuild the pair after a failover
 # scenario: discard the (possibly promoted) standby with its volume, restart
-# the primary, re-seed the standby via pg_basebackup
+# the primary, re-seed the standby via pg_basebackup. The scenario's logical
+# slot on the restored primary has no consumer anymore and would pin WAL for
+# the rest of the suite — drop it.
 restore_pair() {
   $COMPOSE rm -sfv "$2" >/dev/null 2>&1 || true
   if ! $COMPOSE up -d --wait "$1" "$2" >/dev/null 2>&1; then
     echo "restore_pair: failed to restore $1/$2, later scenarios will hit a dead pair" >&2
     return 0
+  fi
+  if [[ -n "${3:-}" ]]; then
+    sql "$1" postgres "SELECT pg_drop_replication_slot(slot_name)
+                         FROM pg_replication_slots
+                        WHERE slot_name = '$3' AND NOT active" >/dev/null
   fi
 }
 

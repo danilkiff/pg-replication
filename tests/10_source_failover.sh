@@ -8,7 +8,7 @@
 
 cd "$(dirname "$0")/.." && source tests/lib.sh
 setup t10_failover
-trap 'restore_pair $PUB $PUB_STANDBY' EXIT
+trap 'restore_pair $PUB $PUB_STANDBY sub_t10' EXIT
 
 wait_streaming $PUB
 

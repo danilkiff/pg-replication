@@ -8,7 +8,7 @@
 
 cd "$(dirname "$0")/.." && source tests/lib.sh
 setup t09_switchover
-trap 'restore_pair $PUB $PUB_STANDBY' EXIT
+trap 'restore_pair $PUB $PUB_STANDBY sub_t09' EXIT
 
 wait_streaming $PUB
 
