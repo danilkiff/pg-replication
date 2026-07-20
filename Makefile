@@ -1,7 +1,8 @@
 .DEFAULT_GOAL := help
 
+# Self-documenting help: print every target line annotated with a ## comment
 help: ## show this help
-	@grep -hE '^[a-z0-9%_-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "%-10s %s\n", $$1, $$2}'
+	@grep -E '^[a-z0-9%_-]+:.*##' Makefile | awk -F':.*## ' '{printf "%-10s %s\n", $$1, $$2}'
 
 up: ## start the four PostgreSQL nodes
 	docker compose up -d --wait
