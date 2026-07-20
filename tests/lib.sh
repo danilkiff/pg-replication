@@ -7,8 +7,11 @@ set -euo pipefail
 COMPOSE="docker compose"
 PUB=publisher
 SUB=subscriber
-# Connection string used in CREATE SUBSCRIPTION; resolves inside the compose network
-pub_conninfo() { echo "host=publisher port=5432 user=postgres password=postgres dbname=$1"; }
+PUB_STANDBY=publisher-standby
+SUB_STANDBY=subscriber-standby
+# Connection strings used in CREATE SUBSCRIPTION; hosts resolve inside the compose network
+conninfo() { echo "host=$1 port=5432 user=postgres password=postgres dbname=$2"; }
+pub_conninfo() { conninfo publisher "$1"; }
 
 _PASS=0
 
@@ -102,6 +105,31 @@ setup() {
   drop_db $SUB "$DB"
   sql $PUB postgres "CREATE DATABASE $DB"
   sql $SUB postgres "CREATE DATABASE $DB"
+}
+
+# wait_streaming <primary> — physical standby attached and fully caught up.
+# pg_stat_replication lists logical walsenders too; the physical one is told
+# apart by the default walreceiver application_name.
+wait_streaming() {
+  wait_value "$1" postgres \
+    "SELECT count(*) FROM pg_stat_replication
+      WHERE application_name = 'walreceiver' AND state = 'streaming'
+        AND pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) = 0" \
+    1 "physical standby of $1 is streaming and caught up" 120
+}
+
+# promote <standby> — promote and wait until it accepts writes
+promote() {
+  sql "$1" postgres "SELECT pg_promote()" >/dev/null
+  wait_value "$1" postgres "SELECT pg_is_in_recovery()" f "$1 promoted" 60
+}
+
+# restore_pair <primary> <standby> — rebuild the pair after a failover
+# scenario: discard the (possibly promoted) standby with its volume, restart
+# the primary, re-seed the standby via pg_basebackup
+restore_pair() {
+  $COMPOSE rm -sfv "$2" >/dev/null 2>&1 || true
+  $COMPOSE up -d --wait "$1" "$2" >/dev/null 2>&1
 }
 
 finish() {
