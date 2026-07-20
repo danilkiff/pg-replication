@@ -1,0 +1,35 @@
+services:
+  publisher:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: postgres
+    # Sender-side limits are raised because scenario databases stay around for
+    # inspection after the suite, each holding a live replication slot
+    command: >-
+      -c wal_level=logical
+      -c max_wal_senders=20
+      -c max_replication_slots=20
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  subscriber:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: postgres
+    # Apply workers count against both limits; defaults (8/4) stall initial sync
+    # once a few scenario subscriptions are running concurrently
+    command: >-
+      -c max_worker_processes=32
+      -c max_logical_replication_workers=16
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
