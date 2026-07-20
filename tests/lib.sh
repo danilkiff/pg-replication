@@ -76,14 +76,19 @@ expect_fail() {
 # wait_value <node> <db> <query> <expected> <description> [timeout_s]
 wait_value() {
   local node=$1 db=$2 query=$3 expected=$4 desc=$5 timeout=${6:-30}
-  local deadline=$((SECONDS + timeout)) actual
+  local deadline=$((SECONDS + timeout)) actual err=''
   while true; do
-    actual=$(sql "$node" "$db" "$query" 2>/dev/null || true)
+    if actual=$(sql "$node" "$db" "$query" 2>&1); then
+      err=''
+    else
+      err=$actual
+      actual=''
+    fi
     if [[ "$actual" == "$expected" ]]; then
       ok "$desc"
       return 0
     fi
-    (( SECONDS < deadline )) || fail "$desc: timed out, last value '$actual', expected '$expected'"
+    (( SECONDS < deadline )) || fail "$desc: timed out, last value '$actual', expected '$expected'${err:+, last error: $err}"
     sleep 0.5
   done
 }
@@ -155,7 +160,10 @@ promote() {
 # the primary, re-seed the standby via pg_basebackup
 restore_pair() {
   $COMPOSE rm -sfv "$2" >/dev/null 2>&1 || true
-  $COMPOSE up -d --wait "$1" "$2" >/dev/null 2>&1
+  if ! $COMPOSE up -d --wait "$1" "$2" >/dev/null 2>&1; then
+    echo "restore_pair: failed to restore $1/$2, later scenarios will hit a dead pair" >&2
+    return 0
+  fi
 }
 
 finish() {
