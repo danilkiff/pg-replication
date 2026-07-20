@@ -1,6 +1,6 @@
 # TLDR
 
-Ten scenarios against a four-node `postgres:15` (15.18) stand — publisher and
+Ten scenarios against a four-node `postgres:15.18` stand — publisher and
 subscriber, each an active-passive physical pair. The
 experiment's core result: logical replication is not a transparent add-on —
 publishing tables imposes contract obligations on the data source itself, and

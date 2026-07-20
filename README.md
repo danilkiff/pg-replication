@@ -1,6 +1,6 @@
 # PostgreSQL 15 logical replication scenarios
 
-Four `postgres:15` containers under Docker Compose — `publisher` and
+Four `postgres:15.18` containers under Docker Compose — `publisher` and
 `subscriber`, each with a physical standby for the failover scenarios — and a
 set of self-contained test scripts demonstrating logical replication: the
 happy path and the edge cases people actually hit. Each scenario is executable,
