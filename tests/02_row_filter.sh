@@ -20,6 +20,11 @@ sql $PUB $DB "DROP PUBLICATION pub_all_dml"
 sql $PUB $DB "CREATE PUBLICATION pub_eu FOR TABLE orders WHERE (region = 'eu')
               WITH (publish = 'insert')"
 
+# The same statement is legal again: the identity restriction applies only to
+# publications that publish UPDATE/DELETE
+sql $PUB $DB "UPDATE orders SET amount = 0"
+ok "UPDATE accepted under the insert-only publication"
+
 sql $PUB $DB "INSERT INTO orders VALUES (1, 'eu', 10), (2, 'us', 20), (3, 'eu', 30)"
 
 sql $SUB $DB "CREATE SUBSCRIPTION sub_t02 CONNECTION '$(pub_conninfo $DB)' PUBLICATION pub_eu"
