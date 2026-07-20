@@ -1,7 +1,7 @@
-# PostgreSQL 17 logical replication scenarios
+# PostgreSQL 18 logical replication scenarios
 
-Four `postgres:17.10` containers under Docker Compose — `publisher` and
-`subscriber`, each with a physical standby for the failover and
+Four `postgres:18.4` containers under Docker Compose — `publisher` and
+`subscriber`, each with a physical standby for the failover, conversion and
 standby-decoding scenarios — and a
 set of self-contained test scripts demonstrating logical replication: the
 happy path and the edge cases people actually hit. Each scenario is executable,
@@ -49,12 +49,21 @@ poking.
   divergence;
 - `14_pg_createsubscriber` — `pg_createsubscriber` (PG17) converts a stopped
   physical standby into a logical replica in place: no initial copy, new
-  system identifier.
+  system identifier;
+- `15_conflict_stats` — named apply conflicts (PG18): `update_missing` and
+  `delete_missing` are skipped silently but counted in
+  `pg_stat_subscription_stats`; `insert_exists` still stops apply;
+- `16_generated_columns` — generated columns (PG18): unpublished by default,
+  each side computes its own; `publish_generated_columns = stored` ships the
+  values into a plain column;
+- `17_idle_slot_timeout` — `idle_replication_slot_timeout` (PG18): the server
+  invalidates an abandoned slot at checkpoint on its own; the subscription
+  then needs a full resync.
 
 ## Out of scope
 
 - physical streaming replication as a topic of its own: the standbys exist to
-  serve the failover and standby-decoding scenarios;
+  serve the failover, conversion and standby-decoding scenarios;
 - `streaming` / `two_phase` subscription options;
 - orchestration beyond Docker Compose.
 

@@ -39,13 +39,14 @@ compose start $PUB_STANDBY >/dev/null 2>&1
 # there because the whole cluster config travels in postgresql.auto.conf
 # (init-primary.sh).
 # -w /tmp: the tool puts the target's unix socket into the current directory,
-# and / is not writable for postgres
-compose exec -w /tmp -T $PUB_STANDBY pg_createsubscriber \
-  -D /var/lib/postgresql/data \
-  -d $DB \
+# and / is not writable for postgres. $PGDATA resolves inside the container —
+# the PG18 image moved it under a versioned path.
+compose exec -w /tmp -T $PUB_STANDBY bash -c 'pg_createsubscriber \
+  -D "$PGDATA" \
+  -d '$DB' \
   -P "host=publisher port=5432 user=postgres password=postgres dbname=postgres" \
   --subscription=sub_t14 --publication=pub_t14 --replication-slot=sub_t14 \
-  --recovery-timeout=120 >/dev/null 2>&1 \
+  --recovery-timeout=120' >/dev/null 2>&1 \
   || fail "pg_createsubscriber failed"
 ok "pg_createsubscriber converted the standby"
 

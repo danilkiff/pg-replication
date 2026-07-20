@@ -17,9 +17,9 @@ echo "host replication all all scram-sha-256" >> "$PGDATA/pg_hba.conf"
 #   suite, each holding a live replication slot;
 # - receiver limits: apply workers count against max_worker_processes and
 #   max_logical_replication_workers, and defaults (8/4) stall initial sync
-#   once a few scenario subscriptions run concurrently; max_replication_slots
-#   also sizes the replication-origin state pool — one origin per
-#   subscription;
+#   once a few scenario subscriptions run concurrently; the origin pool — one
+#   origin per subscription plus one per running tablesync — has its own knob
+#   since PG18 and its default (10) runs out mid-suite;
 # - hot_standby_feedback acts only on the standby: without it the primary's
 #   vacuum can invalidate the standby's logical slot (12);
 # - synchronized_standby_slots gates failover-slot walsenders behind the
@@ -33,6 +33,7 @@ ALTER SYSTEM SET max_wal_senders = 20;
 ALTER SYSTEM SET max_replication_slots = 20;
 ALTER SYSTEM SET max_worker_processes = 32;
 ALTER SYSTEM SET max_logical_replication_workers = 16;
+ALTER SYSTEM SET max_active_replication_origins = 20;
 ALTER SYSTEM SET hot_standby_feedback = on;
 ALTER SYSTEM SET synchronized_standby_slots = 'standby_slot';
 ALTER SYSTEM SET sync_replication_slots = on;

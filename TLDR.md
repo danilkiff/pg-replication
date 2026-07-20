@@ -1,6 +1,6 @@
 # TLDR
 
-Fourteen scenarios against a four-node `postgres:17.10` stand — publisher and
+Seventeen scenarios against a four-node `postgres:18.4` stand — publisher and
 subscriber, each an active-passive physical pair. The
 experiment's core result: logical replication is not a transparent add-on —
 publishing tables imposes contract obligations on the data source itself, and
@@ -9,8 +9,9 @@ same-table bidirectional replication works once the
 [`origin` subscription option](https://www.postgresql.org/docs/16/sql-createsubscription.html)
 (PG16) breaks the loop (`tests/11_origin_filter.sh`), a standby can carry
 logical consumers without being promoted (`tests/12_standby_decoding.sh`),
-and failover slots (PG17) finally tie the logical consumer to the physical
-pair (`tests/13_failover_slots.sh`).
+failover slots (PG17) finally tie the logical consumer to the physical
+pair (`tests/13_failover_slots.sh`), and conflicts got names, counters and
+log lines (PG18, `tests/15_conflict_stats.sh`).
 
 ## Obligations on the data source
 
@@ -31,7 +32,9 @@ Each obligation is enforced by the scenario test named after it.
 - disk headroom and slot monitoring: an unavailable consumer pins WAL on the
   source without bound; the source owns watching
   `pg_replication_slots` backlog and deciding when a dead slot gets dropped
-  (`tests/05_wal_retention.sh`);
+  (`tests/05_wal_retention.sh`); since PG18 `idle_replication_slot_timeout`
+  caps the damage without a human, at the price of a full resync for the
+  consumer (`tests/17_idle_slot_timeout.sh`);
 - coordinated schema changes: DDL does not replicate, so additive DDL must
   reach the consumer before the first row that uses it — otherwise apply halts
   and the WAL backlog starts growing (`tests/07_schema_drift.sh`);
@@ -39,6 +42,12 @@ Each obligation is enforced by the scenario test named after it.
   the published key range; a collision stops apply, and recovery via
   `ALTER SUBSCRIPTION ... SKIP` silently discards a whole source transaction
   downstream — delivered does not mean applied (`tests/04_conflict_skip.sh`);
+  PG18 at least gives conflicts names, per-type counters and log lines, and
+  counts the silently-skipped kinds too (`tests/15_conflict_stats.sh`);
+- derived data: generated columns are not published by default — the consumer
+  recomputes them with its own expression and silently diverges if it
+  differs; `publish_generated_columns = stored` ships the source's values
+  into a plain column instead (`tests/16_generated_columns.sh`);
 - destructive statements propagate: TRUNCATE on the source empties the
   consumer's table under the default publish list; the source must exclude it
   from the publication if consumers cannot accept that (`tests/01_basic.sh`);
@@ -51,7 +60,7 @@ Each obligation is enforced by the scenario test named after it.
 Logical replication on the source composes with physical streaming, but not
 transparently:
 
-- [`wal_level = logical`](https://www.postgresql.org/docs/17/runtime-config-wal.html#GUC-WAL-LEVEL)
+- [`wal_level = logical`](https://www.postgresql.org/docs/18/runtime-config-wal.html#GUC-WAL-LEVEL)
   is not the default (`replica`) and takes a restart, so both nodes of an HA
   pair need it configured up front — the level cannot be raised at promote
   time;
