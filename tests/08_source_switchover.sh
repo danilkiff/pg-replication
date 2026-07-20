@@ -28,7 +28,7 @@ wait_value $PUB $DB "SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flus
 wait_streaming $PUB
 
 sql $SUB $DB "ALTER SUBSCRIPTION sub_t08 DISABLE"
-$COMPOSE stop $PUB >/dev/null 2>&1
+compose stop $PUB >/dev/null 2>&1
 promote $PUB_STANDBY
 
 sql $PUB_STANDBY $DB "SELECT pg_create_logical_replication_slot('sub_t08', 'pgoutput')" >/dev/null

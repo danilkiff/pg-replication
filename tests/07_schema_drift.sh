@@ -28,7 +28,7 @@ risk wait_value $SUB $DB "SELECT apply_error_count > 0 FROM pg_stat_subscription
                       WHERE subname = 'sub_t07'" t \
   "apply fails and retries, errors visible in pg_stat_subscription_stats"
 # grep -q would SIGPIPE `docker logs` and trip pipefail — capture first
-drift_logs=$($COMPOSE logs $SUB --since "$since" 2>/dev/null)
+drift_logs=$(compose logs $SUB --since "$since" 2>/dev/null)
 grep -q "missing replicated column" <<<"$drift_logs" \
   || fail "expected 'missing replicated column' in subscriber log"
 ok "subscriber log names the missing column"

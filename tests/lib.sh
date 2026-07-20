@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-COMPOSE="docker compose"
+compose() { docker compose "$@"; }
 PUB=publisher
 SUB=subscriber
 PUB_STANDBY=publisher-standby
@@ -20,7 +20,7 @@ sql() {
   local node=$1
   local db=$2
   local statement=$3
-  $COMPOSE exec -T "$node" psql -X -q -v ON_ERROR_STOP=1 -U postgres -d "$db" -Atc "$statement"
+  compose exec -T "$node" psql -X -q -v ON_ERROR_STOP=1 -U postgres -d "$db" -Atc "$statement"
 }
 
 # Gentoo-style markers: green * ok, red * failure, orange ! for an assertion
@@ -186,8 +186,8 @@ restore_pair() {
   local primary=$1
   local standby=$2
   local slot=${3:-}
-  $COMPOSE rm -sfv "$standby" >/dev/null 2>&1 || true
-  if ! $COMPOSE up -d --wait "$primary" "$standby" >/dev/null 2>&1; then
+  compose rm -sfv "$standby" >/dev/null 2>&1 || true
+  if ! compose up -d --wait "$primary" "$standby" >/dev/null 2>&1; then
     echo "restore_pair: failed to restore $primary/$standby, later scenarios will hit a dead pair" >&2
     return 0
   fi

@@ -23,13 +23,13 @@ wait_value $SUB $DB "SELECT count(*) FROM t" 100 "baseline replicated everywhere
 wait_streaming $PUB
 
 # Standby falls behind; the logical consumer keeps going
-$COMPOSE stop $PUB_STANDBY >/dev/null 2>&1
+compose stop $PUB_STANDBY >/dev/null 2>&1
 sql $PUB $DB "INSERT INTO t SELECT g, 'row-' || g FROM generate_series(101, 200) g"
 wait_value $SUB $DB "SELECT count(*) FROM t" 200 "subscriber confirmed the batch the standby missed"
 
-$COMPOSE kill $PUB >/dev/null 2>&1
+compose kill $PUB >/dev/null 2>&1
 # --no-deps: plain `compose start` would resurrect the killed primary
-$COMPOSE up -d --no-deps $PUB_STANDBY >/dev/null 2>&1
+compose up -d --no-deps $PUB_STANDBY >/dev/null 2>&1
 wait_value $PUB_STANDBY postgres "SELECT 1" 1 "standby back up" 60
 promote $PUB_STANDBY
 

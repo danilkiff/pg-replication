@@ -30,7 +30,7 @@ wait_value $SUB $DB "SELECT apply_error_count > 0 FROM pg_stat_subscription_stat
 
 # The log line carries the LSN needed for SKIP:
 #   ... for replication target relation "public.t" in transaction N, finished at 0/XXXXXXX
-lsn=$($COMPOSE logs $SUB --since "$since" 2>/dev/null \
+lsn=$(compose logs $SUB --since "$since" 2>/dev/null \
       | grep -oE 'finished at [0-9A-F]+/[0-9A-F]+' | tail -1 | awk '{print $3}')
 [[ -n "$lsn" ]] || fail "finish LSN not found in subscriber log"
 ok "finish LSN extracted from log: $lsn"

@@ -23,7 +23,7 @@ wait_value $SUB $DB "SELECT count(*) FROM t" 100 "baseline applied on the subscr
 wait_streaming $SUB
 
 # Standby falls behind; the subscriber keeps applying and confirming
-$COMPOSE stop $SUB_STANDBY >/dev/null 2>&1
+compose stop $SUB_STANDBY >/dev/null 2>&1
 sql $PUB $DB "INSERT INTO t SELECT g, 'row-' || g FROM generate_series(101, 200) g"
 wait_value $SUB $DB "SELECT count(*) FROM t" 200 "subscriber applied the batch the standby missed"
 # The skip only happens once the apply worker has reported the flush upstream —
@@ -32,9 +32,9 @@ wait_value $PUB $DB "SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flus
                        FROM pg_replication_slots WHERE slot_name = 'sub_t10'" t \
   "publisher slot confirmed past the batch" 60
 
-$COMPOSE kill $SUB >/dev/null 2>&1
+compose kill $SUB >/dev/null 2>&1
 # --no-deps: plain `compose start` would resurrect the killed primary
-$COMPOSE up -d --no-deps $SUB_STANDBY >/dev/null 2>&1
+compose up -d --no-deps $SUB_STANDBY >/dev/null 2>&1
 wait_value $SUB_STANDBY postgres "SELECT 1" 1 "standby back up" 60
 promote $SUB_STANDBY
 
