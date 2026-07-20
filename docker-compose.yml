@@ -32,7 +32,7 @@ services:
     <<: *node
     command: *source-command
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - ./docker/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
 
@@ -42,7 +42,7 @@ services:
     entrypoint: ["bash", "/docker/standby-entrypoint.sh", "publisher"]
     command: *source-command
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - ./docker:/docker:ro
     depends_on:
@@ -53,7 +53,7 @@ services:
     <<: *node
     command: *sink-command
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - ./docker/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
 
@@ -63,7 +63,7 @@ services:
     entrypoint: ["bash", "/docker/standby-entrypoint.sh", "subscriber"]
     command: *sink-command
     ports:
-      - "5436:5432"
+      - "127.0.0.1:5436:5432"
     volumes:
       - ./docker:/docker:ro
     depends_on:

@@ -8,7 +8,7 @@ runs in its own database pair, and asserts what it claims.
 
 Requires Docker only; all SQL runs inside the containers. `make` prints the
 available targets; `make test` runs everything, `make test-04` runs one
-scenario. Instances are exposed on host ports 5433 (publisher), 5434
+scenario. Instances are exposed on localhost ports 5433 (publisher), 5434
 (subscriber), 5435/5436 (their standbys), password `postgres`, for manual
 poking.
 
