@@ -21,9 +21,9 @@ sql $PUB $DB "INSERT INTO items VALUES (101, 'insert')"
 sql $PUB $DB "UPDATE items SET val = 'update' WHERE id = 1"
 sql $PUB $DB "DELETE FROM items WHERE id = 2"
 
-wait_value $SUB $DB "SELECT count(*) FROM items" 100 "INSERT and DELETE replicated"
+wait_value $SUB $DB "SELECT val FROM items WHERE id = 101" "insert" "INSERT replicated"
 wait_value $SUB $DB "SELECT val FROM items WHERE id = 1" "update" "UPDATE replicated"
-wait_value $SUB $DB "SELECT count(*) FROM items WHERE id = 2" 0 "deleted row is gone"
+wait_value $SUB $DB "SELECT count(*) FROM items WHERE id = 2" 0 "DELETE replicated"
 
 # TRUNCATE is replicated too (publish option includes it by default)
 sql $PUB $DB "TRUNCATE items"
