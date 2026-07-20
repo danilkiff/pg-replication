@@ -17,10 +17,10 @@ wait_sync $SUB $DB sub_t06
 sql $PUB $DB "INSERT INTO events VALUES (1, 'a'), (2, 'b')"
 wait_value $SUB $DB "SELECT count(*) FROM events" 2 "INSERT works without replica identity"
 
-expect_fail $PUB $DB "UPDATE events SET payload = 'c' WHERE id = 1" \
+risk expect_fail $PUB $DB "UPDATE events SET payload = 'c' WHERE id = 1" \
   "does not have a replica identity" \
   "UPDATE rejected on the publisher without replica identity"
-expect_fail $PUB $DB "DELETE FROM events WHERE id = 2" \
+risk expect_fail $PUB $DB "DELETE FROM events WHERE id = 2" \
   "does not have a replica identity" \
   "DELETE rejected on the publisher without replica identity"
 

@@ -2,6 +2,11 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 
+G='' R='' N=''
+if [[ -z "${NO_COLOR:-}" && -t 1 ]] && (( $(tput colors 2>/dev/null || echo 0) >= 8 )); then
+  G=$'\e[32;01m' R=$'\e[31;01m' N=$'\e[0m'
+fi
+
 failed=()
 for t in [0-9][0-9]_*.sh; do
   echo
@@ -12,7 +17,7 @@ done
 
 echo
 if (( ${#failed[@]} )); then
-  echo "FAILED: ${failed[*]}"
+  echo "${R}FAILED: ${failed[*]}${N}"
   exit 1
 fi
-echo "ALL SCENARIOS PASSED"
+echo "${G}ALL SCENARIOS PASSED${N}"

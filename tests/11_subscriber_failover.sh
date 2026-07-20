@@ -46,9 +46,9 @@ sql $PUB $DB "INSERT INTO t SELECT g, 'row-' || g FROM generate_series(201, 300)
 wait_value $SUB_STANDBY $DB "SELECT count(*) FROM t WHERE id > 200" 100 \
   "new changes flow to the promoted subscriber"
 
-assert_eq "$(sql $SUB_STANDBY $DB "SELECT count(*) FROM t WHERE id BETWEEN 101 AND 200")" 0 \
+risk assert_eq "$(sql $SUB_STANDBY $DB "SELECT count(*) FROM t WHERE id BETWEEN 101 AND 200")" 0 \
   "batch confirmed by the dead primary was skipped silently"
-wait_value $SUB_STANDBY $DB "SELECT count(*) FROM pg_stat_subscription
+risk wait_value $SUB_STANDBY $DB "SELECT count(*) FROM pg_stat_subscription
                               WHERE subname = 'sub_t11' AND pid IS NOT NULL" 1 \
   "apply worker keeps running — the gap raised no error"
 

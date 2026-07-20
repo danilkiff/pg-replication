@@ -12,7 +12,7 @@ sql $SUB $DB "CREATE TABLE orders (id int PRIMARY KEY, region text NOT NULL, amo
 # Filter on a non-key column is only allowed when the publication is insert-only:
 # with the default publish list, UPDATE on the publisher would fail
 sql $PUB $DB "CREATE PUBLICATION pub_all_dml FOR TABLE orders WHERE (region = 'eu')"
-expect_fail $PUB $DB "UPDATE orders SET amount = 0" \
+risk expect_fail $PUB $DB "UPDATE orders SET amount = 0" \
   "not part of the replica identity" \
   "UPDATE rejected: filter column is not part of the replica identity"
 sql $PUB $DB "DROP PUBLICATION pub_all_dml"

@@ -33,11 +33,11 @@ $COMPOSE up -d --no-deps $PUB_STANDBY >/dev/null 2>&1
 wait_value $PUB_STANDBY postgres "SELECT 1" 1 "standby back up" 60
 promote $PUB_STANDBY
 
-assert_eq "$(sql $PUB_STANDBY $DB "SELECT count(*) FROM t")" 100 \
+risk assert_eq "$(sql $PUB_STANDBY $DB "SELECT count(*) FROM t")" 100 \
   "promoted source lacks the last batch"
-assert_eq "$(sql $SUB $DB "SELECT count(*) FROM t")" 200 \
+risk assert_eq "$(sql $SUB $DB "SELECT count(*) FROM t")" 200 \
   "subscriber is ahead of the new source: divergence"
-assert_eq "$(sql $PUB_STANDBY $DB "SELECT count(*) FROM pg_replication_slots")" 0 \
+risk assert_eq "$(sql $PUB_STANDBY $DB "SELECT count(*) FROM pg_replication_slots")" 0 \
   "logical slot did not survive the failover"
 
 sql $SUB $DB "ALTER SUBSCRIPTION sub_t10 DISABLE"

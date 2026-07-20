@@ -21,14 +21,40 @@ sql() {
   $COMPOSE exec -T "$node" psql -X -q -v ON_ERROR_STOP=1 -U postgres -d "$db" -Atc "$3"
 }
 
+# Gentoo-style markers: green * ok, red * failure, orange ! for an assertion
+# whose success confirms an operational risk. Colored only when stdout is a
+# color-capable terminal; orange needs 256 colors, otherwise falls back to
+# yellow.
+_G='' _R='' _O='' _N=''
+if [[ -z "${NO_COLOR:-}" && -t 1 ]]; then
+  _colors=$(tput colors 2>/dev/null || echo 0)
+  if (( _colors >= 8 )); then
+    _G=$'\e[32;01m' _R=$'\e[31;01m' _O=$'\e[33;01m' _N=$'\e[0m'
+    (( _colors >= 256 )) && _O=$'\e[38;5;208;01m'
+  fi
+fi
+
+_RISK=0
 ok() {
   _PASS=$((_PASS + 1))
-  echo "  ok: $1"
+  if (( _RISK )); then
+    echo " ${_O}!${_N} $1"
+  else
+    echo " ${_G}*${_N} $1"
+  fi
 }
 
 fail() {
-  echo "  FAIL: $1" >&2
+  echo " ${_R}*${_N} FAIL: $1" >&2
   exit 1
+}
+
+# risk <assertion...> — wrap ok/assert_eq/wait_value/expect_fail whose success
+# demonstrates an operational risk rather than a working feature
+risk() {
+  _RISK=1
+  "$@"
+  _RISK=0
 }
 
 # assert_eq <actual> <expected> <description>
@@ -133,5 +159,5 @@ restore_pair() {
 }
 
 finish() {
-  echo "=== PASSED ($_PASS assertions)"
+  echo "=== ${_G}PASSED${_N} ($_PASS assertions)"
 }

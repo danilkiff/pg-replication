@@ -30,7 +30,7 @@ sql $PUB $DB "INSERT INTO t SELECT g, repeat('x', 1000) FROM generate_series(1, 
 
 retained=$(sql $PUB $DB "$backlog")
 (( retained > 10 * 1024 * 1024 )) || fail "expected >10MB retained WAL, got $retained bytes"
-ok "slot retains WAL while subscriber is down: $retained bytes"
+risk ok "slot retains WAL while subscriber is down: $retained bytes"
 
 $COMPOSE start $SUB >/dev/null
 wait_value $SUB $DB "SELECT 1" 1 "subscriber is back" 60

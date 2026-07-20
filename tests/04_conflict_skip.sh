@@ -22,7 +22,7 @@ sql $SUB $DB "INSERT INTO t VALUES (1, 'local')"
 since=$(date +%Y-%m-%dT%H:%M:%S)
 sql $PUB $DB "INSERT INTO t VALUES (1, 'remote')"
 
-wait_value $SUB $DB "SELECT subenabled FROM pg_subscription WHERE subname = 'sub_t04'" f \
+risk wait_value $SUB $DB "SELECT subenabled FROM pg_subscription WHERE subname = 'sub_t04'" f \
   "duplicate key stopped the subscription (disable_on_error)"
 wait_value $SUB $DB "SELECT apply_error_count > 0 FROM pg_stat_subscription_stats
                       WHERE subname = 'sub_t04'" t \
@@ -41,7 +41,7 @@ sql $SUB $DB "ALTER SUBSCRIPTION sub_t04 ENABLE"
 # Replication moves on; the skipped transaction is lost, the local row survives
 sql $PUB $DB "INSERT INTO t VALUES (2, 'after-conflict')"
 wait_value $SUB $DB "SELECT v FROM t WHERE id = 2" "after-conflict" "replication resumed after SKIP"
-assert_eq "$(sql $SUB $DB "SELECT v FROM t WHERE id = 1")" "local" \
+risk assert_eq "$(sql $SUB $DB "SELECT v FROM t WHERE id = 1")" "local" \
   "conflicting transaction skipped, local row intact"
 
 finish

@@ -24,7 +24,7 @@ since=$(date +%Y-%m-%dT%H:%M:%S)
 sql $PUB $DB "ALTER TABLE docs ADD COLUMN extra int NOT NULL DEFAULT 0"
 sql $PUB $DB "INSERT INTO docs (body, extra) VALUES ('drift', 1)"
 
-wait_value $SUB $DB "SELECT apply_error_count > 0 FROM pg_stat_subscription_stats
+risk wait_value $SUB $DB "SELECT apply_error_count > 0 FROM pg_stat_subscription_stats
                       WHERE subname = 'sub_t07'" t \
   "apply fails and retries, errors visible in pg_stat_subscription_stats"
 # grep -q would SIGPIPE `docker logs` and trip pipefail — capture first
@@ -39,7 +39,7 @@ wait_value $SUB $DB "SELECT count(*) FROM docs" 6 "apply recovered after adding 
 wait_value $SUB $DB "SELECT extra FROM docs WHERE body = 'drift'" 1 "new column value arrived"
 
 # --- sequences ---
-assert_eq "$(sql $SUB $DB "SELECT coalesce(last_value, 0) FROM pg_sequences
+risk assert_eq "$(sql $SUB $DB "SELECT coalesce(last_value, 0) FROM pg_sequences
                             WHERE sequencename = 'docs_id_seq'")" 0 \
   "subscriber sequence untouched by replication"
 
