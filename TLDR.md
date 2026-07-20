@@ -1,14 +1,16 @@
 # TLDR
 
-Twelve scenarios against a four-node `postgres:16.14` stand — publisher and
+Fourteen scenarios against a four-node `postgres:17.10` stand — publisher and
 subscriber, each an active-passive physical pair. The
 experiment's core result: logical replication is not a transparent add-on —
 publishing tables imposes contract obligations on the data source itself, and
 each one is observable as a concrete failure when violated. Side findings:
 same-table bidirectional replication works once the
 [`origin` subscription option](https://www.postgresql.org/docs/16/sql-createsubscription.html)
-(PG16) breaks the loop (`tests/11_origin_filter.sh`), and a standby can carry
-logical consumers without being promoted (`tests/12_standby_decoding.sh`).
+(PG16) breaks the loop (`tests/11_origin_filter.sh`), a standby can carry
+logical consumers without being promoted (`tests/12_standby_decoding.sh`),
+and failover slots (PG17) finally tie the logical consumer to the physical
+pair (`tests/13_failover_slots.sh`).
 
 ## Obligations on the data source
 
@@ -16,7 +18,8 @@ Each obligation is enforced by the scenario test named after it.
 
 - capacity: the source runs with `wal_level = logical` and reserves
   `max_wal_senders` / `max_replication_slots` for every consumer; without this
-  no subscription starts (docker-compose.yml, exercised by every scenario);
+  no subscription starts (docker/init-primary.sh, exercised by every
+  scenario);
 - replica identity: every published table receiving UPDATE/DELETE must have a
   primary key or replica identity — otherwise those statements fail on the
   source itself, breaking its own workload, not the consumer's
@@ -46,9 +49,9 @@ Each obligation is enforced by the scenario test named after it.
 ## Interaction with physical active-passive HA
 
 Logical replication on the source composes with physical streaming, but not
-transparently on PG16:
+transparently:
 
-- [`wal_level = logical`](https://www.postgresql.org/docs/16/runtime-config-wal.html#GUC-WAL-LEVEL)
+- [`wal_level = logical`](https://www.postgresql.org/docs/17/runtime-config-wal.html#GUC-WAL-LEVEL)
   is not the default (`replica`) and takes a restart, so both nodes of an HA
   pair need it configured up front — the level cannot be raised at promote
   time;
@@ -57,15 +60,25 @@ transparently on PG16:
 - a standby can run logical decoding (PG16) and thus serve logical consumers
   without promotion, at the price of `hot_standby_feedback` and a snapshot
   dependency on the primary (`tests/12_standby_decoding.sh`);
-- logical replication slots are not carried over by physical failover: the
-  promoted source has no slot, and with a lagging standby the subscriber ends
-  up ahead of the new source — divergence with no error anywhere
-  (`tests/09_source_failover.sh`). Slot synchronization to a standby
-  (`failover` slots, `sync_replication_slots`) arrived in
-  [PG17](https://www.postgresql.org/docs/17/logical-replication-failover.html);
-- a planned switchover is lossless on PG16: freeze writes, wait out both
-  consumers, promote, recreate the slot, repoint the subscription
-  (`tests/08_source_switchover.sh`);
+- by default logical replication slots are not carried over by physical
+  failover: the promoted source has no slot, and with a lagging standby the
+  subscriber ends up ahead of the new source — divergence with no error
+  anywhere (`tests/09_source_failover.sh`);
+- [failover slots](https://www.postgresql.org/docs/17/logical-replication-failover.html)
+  (PG17) close exactly that hole: `failover = true` on the subscription,
+  `sync_replication_slots` on the standby, `synchronized_standby_slots` on the
+  primary — the consumer can no longer overtake the standby, and after
+  promotion the synced slot resumes with nothing lost; the promoted node must
+  clear `synchronized_standby_slots` until it has a standby of its own
+  (`tests/13_failover_slots.sh`);
+- a planned switchover is lossless even without failover slots: freeze writes,
+  wait out both consumers, promote, recreate the slot, repoint the
+  subscription (`tests/08_source_switchover.sh`);
+- a stopped physical standby can be converted into a logical replica in place
+  by [`pg_createsubscriber`](https://www.postgresql.org/docs/17/app-pgcreatesubscriber.html)
+  (PG17) — the data arrives via physical replay, only the ongoing changes flow
+  logically; the node gets a new system identifier and leaves the physical
+  pair for good (`tests/14_pg_createsubscriber.sh`);
 - on the subscriber side the subscription and its origin progress do travel
   with the physical replica, but the publisher resumes at the slot's
   `confirmed_flush_lsn` — transactions the dead primary had confirmed are

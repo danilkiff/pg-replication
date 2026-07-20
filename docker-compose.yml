@@ -1,5 +1,5 @@
 x-node: &node
-  image: postgres:16.14
+  image: postgres:17.10
   environment:
     POSTGRES_PASSWORD: postgres
     # picked up by pg_basebackup and by the standby's walreceiver

@@ -4,7 +4,7 @@
 # primary. Slot creation on a standby waits for a running-xacts record that
 # only the primary can write — pg_log_standby_snapshot() emits one on demand;
 # without the pump below CREATE SUBSCRIPTION would sit until the primary's
-# next checkpoint. hot_standby_feedback (docker-compose.yml) keeps the
+# next checkpoint. hot_standby_feedback (docker/init-primary.sh) keeps the
 # primary's vacuum from invalidating the standby's slot.
 
 cd "$(dirname "$0")/.." && source tests/lib.sh

@@ -1,6 +1,6 @@
-# PostgreSQL 16 logical replication scenarios
+# PostgreSQL 17 logical replication scenarios
 
-Four `postgres:16.14` containers under Docker Compose — `publisher` and
+Four `postgres:17.10` containers under Docker Compose — `publisher` and
 `subscriber`, each with a physical standby for the failover and
 standby-decoding scenarios — and a
 set of self-contained test scripts demonstrating logical replication: the
@@ -42,7 +42,14 @@ poking.
   no loop;
 - `12_standby_decoding` — logical decoding on a standby (PG16): the
   subscription feeds off the publisher's physical standby;
-  `pg_log_standby_snapshot()` unblocks slot creation.
+  `pg_log_standby_snapshot()` unblocks slot creation;
+- `13_failover_slots` — failover slots (PG17), the counter-scenario to 09:
+  `failover = true` plus `sync_replication_slots` and
+  `synchronized_standby_slots` survive an unplanned source failover with no
+  divergence;
+- `14_pg_createsubscriber` — `pg_createsubscriber` (PG17) converts a stopped
+  physical standby into a logical replica in place: no initial copy, new
+  system identifier.
 
 ## Out of scope
 
