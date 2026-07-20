@@ -3,8 +3,8 @@
 Four `postgres:15` containers under Docker Compose — `publisher` and
 `subscriber`, each with a physical standby for the failover scenarios — and a
 set of self-contained test scripts demonstrating logical replication: the
-happy path and the edge cases people actually hit. Each scenario is executable
-and asserts what it claims.
+happy path and the edge cases people actually hit. Each scenario is executable,
+runs in its own database pair, and asserts what it claims.
 
 Requires Docker only; all SQL runs inside the containers. `make` prints the
 available targets; `make test` runs everything, `make test-04` runs one
@@ -36,11 +36,17 @@ poking.
 - `10_subscriber_failover` — the subscription survives the subscriber's own
   failover, but transactions the dead primary confirmed are silently skipped.
 
-Bidirectional replication is deliberately absent: safe same-table loop
-protection needs the
-[`origin` subscription option](https://www.postgresql.org/docs/16/sql-createsubscription.html),
-which arrived in PostgreSQL 16. TLDR.md sums up the contract obligations the
-scenarios demonstrate and the PG15 limitations around physical HA.
+## Out of scope
 
-Scenario scripts in `tests/` are the documentation: each starts with a comment
-explaining the behavior it demonstrates, then shows it in runnable SQL.
+- physical streaming replication as a topic of its own: the standbys exist to
+  serve the failover scenarios;
+- `streaming` / `two_phase` subscription options;
+- bidirectional replication: safe same-table loop protection needs the
+  [`origin` subscription option](https://www.postgresql.org/docs/16/sql-createsubscription.html),
+  which arrived in PostgreSQL 16;
+- orchestration beyond Docker Compose.
+
+TLDR.md sums up the contract obligations the scenarios demonstrate and the
+PG15 limitations around physical HA. Scenario scripts in `tests/` are the
+documentation: each starts with a comment explaining the behavior it
+demonstrates, then shows it in runnable SQL.
