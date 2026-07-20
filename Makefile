@@ -3,7 +3,7 @@
 help: ## show this help
 	@grep -hE '^[a-z0-9%_-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "%-10s %s\n", $$1, $$2}'
 
-up: ## start both PostgreSQL instances
+up: ## start the four PostgreSQL nodes
 	docker compose up -d --wait
 
 down: ## stop instances and drop their data
